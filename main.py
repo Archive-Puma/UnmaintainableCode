@@ -61,6 +61,13 @@ class Main:
           i += 1
       i += 1
 
+
+  def naming_underscore(self, quantity='2'):
+    underscore = ''
+    for x in range(quantity):
+      underscore += '_'
+      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
+
   
   def naming_singleletter(self):
     i = 0
