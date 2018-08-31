@@ -1,11 +1,16 @@
 # https://github.com/Droogans/unmaintainable-code
+
 import re
 import os
 import sys
+import random
+
+# TODO: Arrays: char name[5] = "Kike";
+# TODO: Concat-vars: int num, counter = 0;
+# FIXME: Vars in text = int var; char* txt = "var is awesome";
 
 class Main:
   
-
   def __init__(self, argv):
     self.vars = []
     self.path = os.path.join(os.getcwd(), argv[1])
@@ -31,9 +36,12 @@ class Main:
       for line in self.code.split('\n'):
         line = self.regex(line)
         self.findvars(line)
-      self.singleLetter()
+      self.vars.sort()
+      self.naming_underscore()
+      self.naming_singleletter()
 
       _output.write(self.code)
+
 
   def regex(self, line):
     fline = re.sub('[\ \(\)\,\;]', '¬', line) # Replace 'spaces ( ) , ;' with '¬'
@@ -52,8 +60,15 @@ class Main:
           i += 1
       i += 1
 
+
+  def naming_underscore(self, quantity=2):
+    underscore = ''
+    for x in range(quantity):
+      underscore += '_'
+      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
+
   
-  def singleLetter(self):
+  def naming_singleletter(self):
     i = 0
     singleletter = [ '`' ]
     while i < len(self.vars):
@@ -71,7 +86,8 @@ class Main:
 
       self.code = re.sub('\\b{}\\b'.format(self.vars[i]), ''.join(singleletter), self.code)
       i += 1
-  
+
+
   def run(self):
     self.fileMgmt()
 
