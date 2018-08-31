@@ -14,8 +14,8 @@ class Main:
   def __init__(self, argv):
     self.vars = []
     self.path = os.path.join(os.getcwd(), argv[1])
-    self.out  = self.path + '.uc' # FIXME: Better rename or sustitution
     self.ext  = self.path.split('.').pop()
+    self.out  = self.path + '.' + self.ext # FIXME: Better rename or sustitution
 
     self.__lang__(self.ext)
 
@@ -39,6 +39,7 @@ class Main:
       self.vars.sort()
       self.naming_underscore()
       self.naming_singleletter()
+      if self.ext.lower() == 'c': self.camouflage_lookbusy()
 
       _output.write(self.code)
 
@@ -60,13 +61,6 @@ class Main:
           i += 1
       i += 1
 
-
-  def naming_underscore(self, quantity=2):
-    underscore = ''
-    for x in range(quantity):
-      underscore += '_'
-      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
-
   
   def naming_singleletter(self):
     i = 0
@@ -86,6 +80,44 @@ class Main:
 
       self.code = re.sub('\\b{}\\b'.format(self.vars[i]), ''.join(singleletter), self.code)
       i += 1
+
+
+  def naming_underscore(self, quantity=2):
+    underscore = ''
+    for x in range(quantity):
+      underscore += '_'
+      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
+
+  
+  def camouflage_lookbusy(self):
+    definitions = [
+      [
+        'cloneit(x,y,z)',
+        'add_two(x,y)',
+        'check(in, out)',
+        'distance_between(d1, d2)',
+        'fastcopy(x, y, out)',
+      ],
+      [
+        '/* super useful */',
+        '/* love it */',
+        '/* thanx stackoverflow! */',
+        '/* x, y, z */',
+        '/* better define */',
+        '/* only works with this */',
+        '/* thanx */',
+        '/* don\'t delete this */',
+        '/* another guy wrote this, but work */',
+        '/* TODO: Implement more functions */',
+      ]
+    ]
+
+    # TODO: Include definitions inside the code: fastcopy(x,y,z);
+
+    self.code = '\n' + self.code
+    for definition in definitions[0]:
+      self.code = '#define {0} {1}\n'.format(definition, random.choice(definitions[1])) + self.code
+
 
 
   def run(self):
