@@ -39,15 +39,18 @@ class Main:
       self.vars.sort()
       self.naming_underscore()
       self.naming_singleletter()
-      if self.ext.lower() == 'c': self.camouflage_lookbusy()
+      if self.ext.lower() == 'c':
+        self.camouflage_lookbusy()
+        self.misc_reversetruefalse()
 
       _output.write(self.code)
 
 
   def regex(self, line):
-    fline = re.sub('[\ \(\)\,\;]', '¬', line) # Replace 'spaces ( ) , ;' with '¬'
-    fline = re.sub('¬{2,}', '¬', fline)     # Replace repeated '¬' with one
-    fline = re.sub('(^¬|¬$)', '', fline)    # Erase '¬' in the beginnig and the end of the line
+    fline = re.sub('[\ \(\)\,\;]', '¬', line)                     # Replace 'spaces ( ) , ;' with '¬'
+    fline = re.sub('(["\'])(?:(?=(\\\?))\\2.)*?\\1', '¬', fline)  # Replace text strings with '¬'
+    fline = re.sub('¬{2,}', '¬', fline)                           # Replace repeated '¬' with one
+    fline = re.sub('(^¬|¬$)', '', fline)                          # Erase '¬' in the beginnig and the end of the line
     return fline
 
 
@@ -125,6 +128,13 @@ class Main:
     for definition in definitions[0]:
       self.code = '#define {0} {1}\n'.format(definition, random.choice(definitions[1])) + self.code
 
+
+  def misc_reversetruefalse(self):
+    self.code = '#define FALSE 1\n\n' + self.code
+    self.code = '#define TRUE 0\n' + self.code
+
+    self.code = re.sub('\\btrue\\b', 'FALSE', self.code)
+    self.code = re.sub('\\bfalse\\b', 'TRUE', self.code)
 
 
   def run(self):
