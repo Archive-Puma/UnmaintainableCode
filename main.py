@@ -1,151 +1,107 @@
-# https://github.com/Droogans/unmaintainable-code
-
-import re
+"""
+Author: @CosasDePuma <kikefontanlorenzo@gmail.com>(https://github.com/cosasdepuma)
+Inspiration: How To Write Unmaintainable Code (https://github.com/Droogans/unmaintainable-code)
+"""
 import os
+import re
 import sys
-import random
 
-# TODO: Arrays: char name[5] = "Kike";
-# TODO: Concat-vars: int num, counter = 0;
-# FIXME: Vars in text = int var; char* txt = "var is awesome";
+class Flow:
+    """ Program behaviour """
+    def __init__(self, filename):
+        # Set source-code configuration
+        self.source = {
+            'code': None,
+            'rcode': None,
+            'variables': [],
 
-class Main:
-  
-  def __init__(self, argv):
-    self.vars = []
-    self.path = os.path.join(os.getcwd(), argv[1])
-    self.ext  = self.path.split('.').pop()
-    self.out  = self.path + '.' + self.ext # FIXME: Better rename or sustitution
+            'path': os.path.abspath(filename)
+        }
 
-    self.__lang__(self.ext)
+        # Set program configuration
+        self.config = {
+            'lang': {
+                'blacklist': None,
+                'var_types': None,
 
+                'ext': self.source['path'].split('.').pop()
+            },
 
-  def __lang__(self, ext):
-    if ext.lower() == 'c':
-      self.avoid    = [
-        'main'
-      ]
-      self.vartype  = [
-        'char', 'int', 'short', 'long', 'float', 'double'
-      ]
-
-
-  def fileMgmt(self):
-    with open(self.path, 'r') as _file, open(self.out, 'w') as _output:
-      self.code = _file.read()
-      for line in self.code.split('\n'):
-        line = self.regex(line)
-        self.findvars(line)
-      self.vars.sort()
-      self.naming_underscore()
-      self.naming_singleletter()
-      if self.ext.lower() == 'c':
-        self.camouflage_lookbusy()
-        self.misc_reversetruefalse()
-
-      _output.write(self.code)
+            'mods': {},
+            'current_mods': [],
+            'mods_dir': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'modules')
+        }
 
 
-  def regex(self, line):
-    fline = re.sub('[\ \(\)\,\;]', '¬', line)                     # Replace 'spaces ( ) , ;' with '¬'
-    fline = re.sub('(["\'])(?:(?=(\\\?))\\2.)*?\\1', '¬', fline)  # Replace text strings with '¬'
-    fline = re.sub('¬{2,}', '¬', fline)                           # Replace repeated '¬' with one
-    fline = re.sub('(^¬|¬$)', '', fline)                          # Erase '¬' in the beginnig and the end of the line
-    return fline
+    def import_(self):
+        """ Import of necessary functions and variables depending on the extension """
+        # Modify the PATH to be able to import modules
+        if not self.config['mods_dir'] in sys.path:
+            sys.path.append(self.config['mods_dir'])
+        # Import variable type names
+        try:
+            self.config['lang']['blacklist'] = __import__(self.config['lang']['ext'] + '_lang').blacklist
+            self.config['lang']['var_types'] = __import__(self.config['lang']['ext'] + '_lang').variables
+        # FIXME: Better errors
+        except ImportError:
+            sys.exit('Modules not found')
+        except AttributeError:
+            sys.exit('Incomplete modules')
+        # Find all the available modules
+        for module in os.listdir(self.config['mods_dir']):
+            if module.startswith(self.config['lang']['ext']) and not module.endswith('_lang.py'):
+                self.config['current_mods'].append(module)
+        
+        print(self.config)
 
 
-  def findvars(self, line):
-    i = 0
-    sline = line.split('¬')
-    while i < len(sline) - 1:
-      if sline[i] in self.vartype:
-        if not sline[i+1] in self.avoid:
-          self.vars.append(sline[i+1])
-          i += 1
-      i += 1
+    def read_(self):
+        """ Read the source code from the file """
+        with open(self.source['path'], 'r') as source:
+            self.source['code'] = source.read().strip()
 
 
-  def naming_underscore(self, quantity='2'):
-    underscore = ''
-    for x in range(quantity):
-      underscore += '_'
-      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
-
-  
-  def naming_singleletter(self):
-    i = 0
-    singleletter = [ '`' ]
-    while i < len(self.vars):
-      if singleletter[-1] == 'z':
-        j = -1
-        while j > -len(singleletter) - 1 and singleletter[j] == 'z':
-          singleletter[j] = 'a'
-          j -= 1
-        if j == -len(singleletter) - 1:
-          singleletter.insert(0, 'a')
-        else:
-          singleletter[j] = chr(ord(singleletter[j]) + 1)
-      else:
-        singleletter[-1] = chr(ord(singleletter[-1]) + 1)
-
-      self.code = re.sub('\\b{}\\b'.format(self.vars[i]), ''.join(singleletter), self.code)
-      i += 1
+    def clean_(self):
+        """ Clean the code of characters that do not provide information """
+        # Replace =, (, ), \" and ; with spaces
+        self.source['rcode'] = re.sub('([\\*;=()]|\\\\")', ' ', self.source['code'])
+        # Replaces array sizes or index with spaces
+        self.source['rcode'] = re.sub('\[[0-9]*\]', ' ', self.source['rcode'])
+        # Separate the " to better visualize the strings
+        self.source['rcode'] = re.sub('"', ' " ', self.source['rcode'])
+        # Replace two or more spaces with one space
+        self.source['rcode'] = re.sub('\\ {2,}', ' ', self.source['rcode'])
+        # Remove blank lines and spaces in the beggining of the line
+        self.source['rcode'] = re.sub('(^\\ |^\n)', '', self.source['rcode'], flags=re.MULTILINE)
 
 
-  def naming_underscore(self, quantity=2):
-    underscore = ''
-    for x in range(quantity):
-      underscore += '_'
-      self.code = re.sub('\\b{}\\b'.format(random.choice(self.vars)), underscore, self.code)
-
-  
-  def camouflage_lookbusy(self):
-    definitions = [
-      [
-        'cloneit(x,y,z)',
-        'add_two(x,y)',
-        'check(in, out)',
-        'distance_between(d1, d2)',
-        'fastcopy(x, y, out)',
-      ],
-      [
-        '/* super useful */',
-        '/* love it */',
-        '/* thanx stackoverflow! */',
-        '/* x, y, z */',
-        '/* better define */',
-        '/* only works with this */',
-        '/* thanx */',
-        '/* don\'t delete this */',
-        '/* another guy wrote this, but work */',
-        '/* TODO: Implement more functions */',
-      ]
-    ]
-
-    # TODO: Include definitions inside the code: fastcopy(x,y,z);
-
-    self.code = '\n' + self.code
-    for definition in definitions[0]:
-      self.code = '#define {0} {1}\n'.format(definition, random.choice(definitions[1])) + self.code
-
-
-  def misc_reversetruefalse(self):
-    self.code = '#define FALSE 1\n\n' + self.code
-    self.code = '#define TRUE 0\n' + self.code
-
-    self.code = re.sub('\\btrue\\b', 'FALSE', self.code)
-    self.code = re.sub('\\bfalse\\b', 'TRUE', self.code)
-
-
-  def run(self):
-    self.fileMgmt()
-
+    def analize_(self):
+        """ Analysis of the source code to search for variables """
+        # FLAG: Variable name found!
+        var_found = False
+        # FLAG: Is part of a string or not
+        in_string = False
+        # Read the file word by word
+        for line in self.source['rcode'].split('\n'):
+            for word in line.split(' '):
+                if word == '"':
+                    in_string = not in_string
+                elif not in_string and word in self.config['lang']['var_types']:
+                    var_found = True
+                elif var_found and word not in self.config['lang']['blacklist']:
+                    var_found = False
+                    self.source['variables'].append(word)
 
 
 if __name__ == '__main__':
-  if (len(sys.argv) != 2): # FIXME: Better error
-    print("Must have an argument")
-    sys.exit(0)
-
-  main = Main(sys.argv)
-  main.run()
+    # Check if there are arguments
+    if len(sys.argv) != 2:
+        # FIXME: Better error msg
+        # TODO: Two or more files at once
+        sys.exit('You must specify the name of the file')
+    else:
+        FLOW = Flow(sys.argv[1])
+        FLOW.import_()
+        FLOW.read_()
+        FLOW.clean_()
+        FLOW.analize_()
