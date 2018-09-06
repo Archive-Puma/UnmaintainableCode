@@ -5,6 +5,7 @@ Inspiration: How To Write Unmaintainable Code (https://github.com/Droogans/unmai
 import os
 import re
 import sys
+import errno
 
 class Flow:
     """ Program behaviour """
@@ -14,7 +15,7 @@ class Flow:
             'code': None,
             'rcode': None,
             'variables': [],
-
+            'filename': os.path.basename(filename),
             'path': os.path.abspath(filename)
         }
 
@@ -28,7 +29,6 @@ class Flow:
             },
 
             'mods': {},
-            'current_mods': [],
             'mods_dir': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'modules')
         }
 
@@ -49,10 +49,14 @@ class Flow:
             sys.exit('Incomplete modules')
         # Find all the available modules
         for module in os.listdir(self.config['mods_dir']):
-            if module.startswith(self.config['lang']['ext']) and not module.endswith('_lang.py'):
-                self.config['current_mods'].append(module)
-        
-        print(self.config)
+            # Check current language and python extension
+            if module.startswith(self.config['lang']['ext']) and module[-3:] == '.py':
+                # Format name: extension
+                module = module[:-3]
+                # Excludes lang configuration
+                if not module.endswith('_lang'):
+                    self.config['mods'][module[len(self.config['lang']['ext']) + 1:]] = \
+                        __import__(module).Module(self.source['variables'])
 
 
     def read_(self):
@@ -93,6 +97,29 @@ class Flow:
                     self.source['variables'].append(word)
 
 
+    def run_modules_(self):
+        """ Run the available modules """
+        for module in self.config['mods']:
+            self.source['code'] = self.config['mods'][module].run_(self.source['code'])
+        
+        print(self.source['code'])
+
+
+    def save_(self):
+        """ Save the new and awesome source code in a file """
+        output = os.path.join(os.getcwd(), 'output')
+        if not os.path.exists(output):
+            # Guard against Race Condition
+            try:
+                os.makedirs(output)
+            except OSError as exception:
+                if exception.errno != errno.EEXIST:
+                    raise
+        
+        output = os.path.join(output, self.source['filename'])
+        with open(output, 'w') as _output:
+            _output.write(self.source['code'])
+
 if __name__ == '__main__':
     # Check if there are arguments
     if len(sys.argv) != 2:
@@ -105,3 +132,7 @@ if __name__ == '__main__':
         FLOW.read_()
         FLOW.clean_()
         FLOW.analize_()
+        FLOW.run_modules_()
+        print(FLOW.source['path'])
+        print(FLOW.source['filename'])
+        FLOW.save_()
