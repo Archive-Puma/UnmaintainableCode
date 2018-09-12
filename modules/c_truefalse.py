@@ -9,12 +9,12 @@ import re
 class Module:
     """ Redefine True/False Convention """
     def __init__(self, variables):
-        pass
+        self.head = ''
 
     def run_(self, code, args={}):
         """ Define True as 0 and False as 1 """
-        code = '#define FALSE 1\n\n' + code
-        code = '#define TRUE 0\n' + code
+        self.head = '#define TRUE 0\n'
+        self.head += '#define FALSE 1\n'
         code = re.sub('\\btrue\\b', 'FALSE', code)
         code = re.sub('\\bfalse\\b', 'TRUE', code)
-        return code
+        return self.head, code

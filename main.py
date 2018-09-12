@@ -13,6 +13,7 @@ class Flow:
         # Set source-code configuration
         self.source = {
             'code': None,
+            'head': None,
             'rcode': None,
             'variables': [],
             'filename': os.path.basename(filename),
@@ -79,7 +80,6 @@ class Flow:
         self.source['rcode'] = re.sub('\\ {2,}', ' ', self.source['rcode'])
         # Remove blank lines and spaces in the beggining of the line
         self.source['rcode'] = re.sub('(^\\ |^\n)', '', self.source['rcode'], flags=re.MULTILINE)
-        print(self.source['rcode'])
 
 
     def analize_(self):
@@ -103,7 +103,11 @@ class Flow:
     def run_modules_(self):
         """ Run the available modules """
         for module in self.config['mods']:
-            self.source['code'] = self.config['mods'][module].run_(self.source['code'])
+            head, self.source['code'] = \
+                self.config['mods'][module].run_(self.source['code'])
+            self.source['head'] = head + '\n'
+        # Append head to the code
+        self.source['code'] = self.source['head'] + self.source['code']
 
 
     def save_(self):
@@ -133,6 +137,4 @@ if __name__ == '__main__':
         FLOW.clean_()
         FLOW.analize_()
         FLOW.run_modules_()
-        print(FLOW.source['path'])
-        print(FLOW.source['filename'])
         FLOW.save_()
