@@ -22,8 +22,8 @@ class Flow:
         # Set program configuration
         self.config = {
             'lang': {
-                'blacklist': None,
-                'var_types': None,
+                'blacklist': [],
+                'var_types': [],
 
                 'ext': self.source['path'].split('.').pop()
             },
@@ -40,8 +40,10 @@ class Flow:
             sys.path.append(self.config['mods_dir'])
         # Import variable type names
         try:
-            self.config['lang']['blacklist'] = __import__(self.config['lang']['ext'] + '_lang').blacklist
-            self.config['lang']['var_types'] = __import__(self.config['lang']['ext'] + '_lang').variables
+            self.config['lang']['blacklist'] = \
+                __import__(self.config['lang']['ext'] + '_lang').blacklist
+            self.config['lang']['var_types'] = \
+                __import__(self.config['lang']['ext'] + '_lang').variables
         # FIXME: Better errors
         except ImportError:
             sys.exit('Modules not found')
@@ -70,13 +72,14 @@ class Flow:
         # Replace =, (, ), \" and ; with spaces
         self.source['rcode'] = re.sub('([\\*;=()]|\\\\")', ' ', self.source['code'])
         # Replaces array sizes or index with spaces
-        self.source['rcode'] = re.sub('\[[0-9]*\]', ' ', self.source['rcode'])
+        self.source['rcode'] = re.sub('\\[[0-9]*\\]', ' ', self.source['rcode'])
         # Separate the " to better visualize the strings
         self.source['rcode'] = re.sub('"', ' " ', self.source['rcode'])
         # Replace two or more spaces with one space
         self.source['rcode'] = re.sub('\\ {2,}', ' ', self.source['rcode'])
         # Remove blank lines and spaces in the beggining of the line
         self.source['rcode'] = re.sub('(^\\ |^\n)', '', self.source['rcode'], flags=re.MULTILINE)
+        print(self.source['rcode'])
 
 
     def analize_(self):
@@ -101,8 +104,6 @@ class Flow:
         """ Run the available modules """
         for module in self.config['mods']:
             self.source['code'] = self.config['mods'][module].run_(self.source['code'])
-        
-        print(self.source['code'])
 
 
     def save_(self):
@@ -115,7 +116,6 @@ class Flow:
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise
-        
         output = os.path.join(output, self.source['filename'])
         with open(output, 'w') as _output:
             _output.write(self.source['code'])
