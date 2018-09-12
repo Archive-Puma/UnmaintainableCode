@@ -12,10 +12,10 @@ class Flow:
     def __init__(self, filename):
         # Set source-code configuration
         self.source = {
-            'code': None,
-            'head': None,
-            'rcode': None,
-            'variables': [],
+            'code': str(),
+            'head': str(),
+            'rcode': str(),
+            'variables': list(),
             'filename': os.path.basename(filename),
             'path': os.path.abspath(filename)
         }
@@ -23,28 +23,31 @@ class Flow:
         # Set program configuration
         self.config = {
             'lang': {
-                'blacklist': [],
-                'var_types': [],
+                'blacklist': list(),
+                'var_types': list(),
 
                 'ext': self.source['path'].split('.').pop()
             },
 
             'mods': {},
+            'lang_dir': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lang'),
             'mods_dir': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'modules')
         }
 
 
     def import_(self):
         """ Import of necessary functions and variables depending on the extension """
-        # Modify the PATH to be able to import modules
+        # Modify the PATH to be able to import modules and languages
         if not self.config['mods_dir'] in sys.path:
             sys.path.append(self.config['mods_dir'])
+        if not self.config['lang_dir'] in sys.path:
+            sys.path.append(self.config['lang_dir'])
         # Import variable type names
         try:
             self.config['lang']['blacklist'] = \
-                __import__(self.config['lang']['ext'] + '_lang').BLACKLIST
+                __import__('lang_' + self.config['lang']['ext']).BLACKLIST
             self.config['lang']['var_types'] = \
-                __import__(self.config['lang']['ext'] + '_lang').VARIABLES
+                __import__('lang_' + self.config['lang']['ext']).VARIABLES
         # FIXME: Better errors
         except ImportError:
             sys.exit('Modules not found')
@@ -56,10 +59,8 @@ class Flow:
             if module.startswith(self.config['lang']['ext']) and module[-3:] == '.py':
                 # Format name: extension
                 module = module[:-3]
-                # Excludes lang configuration
-                if not module.endswith('_lang'):
-                    self.config['mods'][module[len(self.config['lang']['ext']) + 1:]] = \
-                        __import__(module).Module(self.source['variables'])
+                self.config['mods'][module[len(self.config['lang']['ext']) + 1:]] = \
+                    __import__(module).Module(self.source['variables'])
 
 
     def read_(self):
@@ -105,7 +106,8 @@ class Flow:
         for module in self.config['mods']:
             head, self.source['code'] = \
                 self.config['mods'][module].run_(self.source['code'])
-            self.source['head'] = head + '\n'
+            if head != '':
+                self.source['head'] += head + '\n'
         # Append head to the code
         self.source['code'] = self.source['head'] + self.source['code']
 
@@ -124,6 +126,7 @@ class Flow:
         with open(output, 'w') as _output:
             _output.write(self.source['code'])
 
+
 if __name__ == '__main__':
     # Check if there are arguments
     if len(sys.argv) != 2:
@@ -131,6 +134,7 @@ if __name__ == '__main__':
         # TODO: Two or more files at once
         sys.exit('You must specify the name of the file')
     else:
+        # Run the program flow
         FLOW = Flow(sys.argv[1])
         FLOW.import_()
         FLOW.read_()
