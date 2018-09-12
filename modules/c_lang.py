@@ -1,2 +1,3 @@
-blacklist = [ 'main' ]
-variables = [ 'char', 'int', 'short', 'long', 'float', 'double' ]
+""" C Language configuration """
+BLACKLIST = ['main']
+VARIABLES = ['char', 'int', 'short', 'long', 'float', 'double']

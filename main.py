@@ -41,9 +41,9 @@ class Flow:
         # Import variable type names
         try:
             self.config['lang']['blacklist'] = \
-                __import__(self.config['lang']['ext'] + '_lang').blacklist
+                __import__(self.config['lang']['ext'] + '_lang').BLACKLIST
             self.config['lang']['var_types'] = \
-                __import__(self.config['lang']['ext'] + '_lang').variables
+                __import__(self.config['lang']['ext'] + '_lang').VARIABLES
         # FIXME: Better errors
         except ImportError:
             sys.exit('Modules not found')
