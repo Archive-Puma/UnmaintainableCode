@@ -1,3 +1,4 @@
 test
 output
+*/*.pyc
 */__pycache__

@@ -105,6 +105,7 @@ Polyglot-Code
 
  - [ ] Choose a super amazing license
  - [ ] Create a PyPi packaged version
+ - [ ] Don't replace variable names in strings!
 
 ----
 
