@@ -75,6 +75,8 @@ class Flow:
         self.source['rcode'] = re.sub('([\\*;=()]|\\\\")', ' ', self.source['code'])
         # Replaces array sizes or index with spaces
         self.source['rcode'] = re.sub('\\[[0-9]*\\]', ' ', self.source['rcode'])
+        # Separate commas to improve variable analysis
+        self.source['rcode'] = re.sub(',', ' , ', self.source['rcode'])
         # Separate the " to better visualize the strings
         self.source['rcode'] = re.sub('"', ' " ', self.source['rcode'])
         # Replace two or more spaces with one space
@@ -89,16 +91,32 @@ class Flow:
         var_found = False
         # FLAG: Is part of a string or not
         in_string = False
+        # FLAG: Comma is available
+        declaration_line = False
         # Read the file word by word
         for line in self.source['rcode'].split('\n'):
             for word in line.split(' '):
+                # Avoid strings
                 if word == '"':
                     in_string = not in_string
-                elif not in_string and word in self.config['lang']['var_types']:
-                    var_found = True
-                elif var_found and word not in self.config['lang']['blacklist']:
-                    var_found = False
-                    self.source['variables'].append(word)
+                elif not in_string:
+                  # Concatenated variables
+                  if word == ',':
+                    if declaration_line:
+                      var_found = True
+                  else: 
+                    # Find var types
+                    if not var_found:
+                      if word in self.config['lang']['var_types']:
+                        var_found = True
+                        declaration_line = True
+                    else:
+                      # Append the variable to the list
+                      var_found = False
+                      if word not in self.config['lang']['blacklist'] and \
+                        word not in self.config['lang']['var_types'] and \
+                        word != '' and not word in self.source['variables']:
+                              self.source['variables'].append(word)
 
 
     def run_modules_(self):
@@ -108,7 +126,6 @@ class Flow:
           self.source['head'] += _header + '\n'
         self.source['code'] = re.sub('^#.+', '', self.source['code'], flags=re.MULTILINE)
         self.source['code'] = re.sub('\n{2,}', '\n', self.source['code'])
-        print(self.source['code'])
         for module in self.config['mods']:
             head, self.source['code'] = \
                 self.config['mods'][module].run_(self.source['code'])
@@ -148,3 +165,5 @@ if __name__ == '__main__':
         FLOW.analize_()
         FLOW.run_modules_()
         FLOW.save_()
+        print(FLOW.source['rcode'])
+        print(FLOW.source['variables'])
