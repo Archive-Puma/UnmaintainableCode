@@ -103,6 +103,12 @@ class Flow:
 
     def run_modules_(self):
         """ Run the available modules """
+        # Split includes and defines from the source code
+        for _header in re.findall('^#.+', self.source['code'], flags=re.MULTILINE):
+          self.source['head'] += _header + '\n'
+        self.source['code'] = re.sub('^#.+', '', self.source['code'], flags=re.MULTILINE)
+        self.source['code'] = re.sub('\n{2,}', '\n', self.source['code'])
+        print(self.source['code'])
         for module in self.config['mods']:
             head, self.source['code'] = \
                 self.config['mods'][module].run_(self.source['code'])
